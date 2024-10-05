@@ -19,28 +19,30 @@ form.addEventListener('submit', async e => {
 
   clearGallery();
   toggleLoader(true);
-  fetchImages(query)
-    .then(response => {
-      const images = response.hits;
 
-      if (images.length === 0) {
-        throw new Error('No images found');
-      }
+  try {
+    const response = await fetchImages(query);
 
-      renderGallery(images);
-      if (lightbox) lightbox.refresh();
-      else lightbox = new SimpleLightbox('#gallery a');
-    })
-    .catch(error => {
-      iziToast.error({
-        title: 'Error',
-        message:
-          'Sorry, there are no images matching your search query. Please try again!',
-      });
-    })
-    .finally(() => {
-      toggleLoader(false);
+    if (!response.hits || response.hits.length === 0) {
+      throw new Error('Nie znaleziono obrazów');
+    }
+
+    renderGallery(response.hits);
+
+    if (lightbox) {
+      lightbox.refresh();
+    } else {
+      lightbox = new SimpleLightbox('#gallery a');
+    }
+  } catch (error) {
+    iziToast.error({
+      title: 'Błąd',
+      message:
+        'Przepraszamy, nie znaleziono żadnych obrazów pasujących do Twojego zapytania. Spróbuj ponownie!',
     });
+  } finally {
+    toggleLoader(false);
+  }
 });
 
 function fetchImages(query) {
