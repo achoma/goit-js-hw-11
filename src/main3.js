@@ -1,12 +1,10 @@
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
-import 'css-loader';
-//*************************************************************************************** */
-// import iziToast from 'izitoast';
+
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
-const API_KEY = '42580380-f7e9d56cf0d50abf8107b2707';
+const API_KEY = '42580380-f7e9d56cf0d50abf8107b2707'; // Wstaw tutaj swój klucz API
 const form = document.getElementById('search-form');
 const gallery = document.getElementById('gallery');
 const loader = document.getElementById('loader');
@@ -20,28 +18,30 @@ form.addEventListener('submit', async e => {
 
   clearGallery();
   toggleLoader(true);
-  fetchImages(query)
-    .then(response => {
-      const images = response.hits;
 
-      if (images.length === 0) {
-        throw new Error('No images found');
-      }
+  try {
+    const response = await fetchImages(query);
+    const images = response.hits;
 
-      renderGallery(images);
-      if (lightbox) lightbox.refresh();
-      else lightbox = new SimpleLightbox('#gallery a');
-    })
-    .catch(error => {
-      iziToast.error({
-        title: 'Error',
+    if (images.length === 0) {
+      iziToast.info({
+        title: 'Info',
         message:
           'Sorry, there are no images matching your search query. Please try again!',
       });
-    })
-    .finally(() => {
-      toggleLoader(false);
+    } else {
+      renderGallery(images);
+      if (lightbox) lightbox.refresh();
+      else lightbox = new SimpleLightbox('#gallery a');
+    }
+  } catch (error) {
+    iziToast.error({
+      title: 'Error',
+      message: 'Failed to fetch images. Please try again later.',
     });
+  } finally {
+    toggleLoader(false);
+  }
 });
 
 function fetchImages(query) {
