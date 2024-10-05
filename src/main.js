@@ -2,6 +2,7 @@ import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 import 'css-loader';
 
+// import iziToast from 'izitoast';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
@@ -19,30 +20,28 @@ form.addEventListener('submit', async e => {
 
   clearGallery();
   toggleLoader(true);
+  fetchImages(query)
+    .then(response => {
+      const images = response.hits;
 
-  try {
-    const response = await fetchImages(query);
+      if (images.length === 0) {
+        throw new Error('No images found');
+      }
 
-    if (!response.hits || response.hits.length === 0) {
-      throw new Error('Nie znaleziono obrazów');
-    }
-
-    renderGallery(response.hits);
-
-    if (lightbox) {
-      lightbox.refresh();
-    } else {
-      lightbox = new SimpleLightbox('#gallery a');
-    }
-  } catch (error) {
-    iziToast.error({
-      title: 'Błąd',
-      message:
-        'Przepraszamy, nie znaleziono żadnych obrazów pasujących do Twojego zapytania. Spróbuj ponownie!',
+      renderGallery(images);
+      if (lightbox) lightbox.refresh();
+      else lightbox = new SimpleLightbox('#gallery a');
+    })
+    .catch(error => {
+      iziToast.error({
+        title: 'Error',
+        message:
+          'Sorry, there are no images matching your search query. Please try again!',
+      });
+    })
+    .finally(() => {
+      toggleLoader(false);
     });
-  } finally {
-    toggleLoader(false);
-  }
 });
 
 function fetchImages(query) {
