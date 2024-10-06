@@ -5,6 +5,7 @@ import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const API_KEY = '42580380-f7e9d56cf0d50abf8107b2707';
+const API_URL = 'https://pixabay.com/api/';
 const form = document.getElementById('search-form');
 const gallery = document.getElementById('gallery');
 const loader = document.getElementById('loader');
@@ -18,35 +19,56 @@ form.addEventListener('submit', async e => {
 
   clearGallery();
   toggleLoader(true);
-  fetchImages(query)
-    .then(response => {
-      const images = response.hits;
 
-      if (images.length === 0) {
-        throw new Error('No images found');
-      }
+  try {
+    const response = await fetchImages(query);
+    const images = response.hits;
 
-      renderGallery(images);
-      if (lightbox) lightbox.refresh();
-      else lightbox = new SimpleLightbox('#gallery a');
-    })
-    .catch(error => {
-      iziToast.error({
-        title: 'Error',
-        message:
-          'Sorry, there are no images matching your search query. Please try again!',
-      });
-    })
-    .finally(() => {
-      toggleLoader(false);
-    });
+    if (images.length === 0) {
+      showErrorMessage(
+        'Sorry, there are no images matching your search query. Please try again!'
+      );
+      return;
+    }
+
+    renderGallery(images);
+    if (lightbox) lightbox.refresh();
+    else lightbox = new SimpleLightbox('#gallery a');
+  } catch (error) {
+    handleFetchError(error);
+  } finally {
+    toggleLoader(false);
+  }
 });
 
-function fetchImages(query) {
-  const url = `https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(
+async function fetchImages(query) {
+  const url = `${API_URL}?key=${API_KEY}&q=${encodeURIComponent(
     query
   )}&image_type=photo&orientation=horizontal&safesearch=true`;
-  return fetch(url).then(res => res.json());
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+
+  return response.json();
+}
+
+function handleFetchError(error) {
+  if (error.message === 'Network response was not ok') {
+    showErrorMessage(
+      'There was a problem with the network connection. Please try again later.'
+    );
+  } else {
+    showErrorMessage('An unexpected error occurred. Please try again.');
+  }
+}
+
+function showErrorMessage(message) {
+  iziToast.error({
+    title: 'Error',
+    message: message,
+  });
 }
 
 function renderGallery(images) {
